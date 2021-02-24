@@ -488,3 +488,27 @@ class Model():
             self.evolve()
         
         return population
+    
+    def reproduction_number(self, z = 4.0, s = 1.0):
+        """
+        Computes and returns the basic reproduction number for model 
+        parameters. When the optional paramters are not provided, the result 
+        is an upper-bound on R_0 assuming all neighbors of the infectious are
+        susceptible and the ratio of susceptible population is 1.
+
+        Parameters
+        ----------
+        z : float
+            average number of susceptible neighbors / infectious
+        s : float
+            ratio of susceptible population
+        """
+
+        gamma_I = self.kIR * self.thetaIR # Mean infectious time
+        Rzero = gamma_I * (self.prob_symptom * self.etaS 
+                         + (1 - self.prob_symptom) * self.etaW) \
+              + z * (self.prob_symptom * (1 - (1 - self.tauS)) ** gamma_I 
+                   + (1 - self.prob_symptom) * (1 - (1 - self.tauW)) ** gamma_I
+                    )
+
+        return Rzero 
