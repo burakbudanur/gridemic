@@ -3,6 +3,7 @@ from numpy.random import rand, randint, gamma, choice, shuffle, seed
 import seaborn as sns
 from matplotlib import pyplot as plt 
 from matplotlib import cm
+import matplotlib as mpl
 
 class Model():
     """
@@ -161,11 +162,23 @@ class Model():
             fig = plt.figure(figsize=(6,6))
             ax = fig.gca()
 
-        ax.imshow(self.disease_state,
-                  cmap=colmap,
-                  vmin=0.0,
-                  vmax=4.0,
-                  aspect='equal')
+
+
+        # compartments = ["$S$", "$E$", "$I_W$", "$I_S$", "$R$"]
+        # norm = mpl.colors.BoundaryNorm(np.arange(0, 5), 5)
+        # fmt = mpl.ticker.FuncFormatter(lambda x, pos: qrates[::-1][norm(x)])
+        
+            
+
+        im = ax.imshow(self.disease_state,
+                       cmap=colmap,
+                       vmin=-0.5,
+                       vmax=4.5,
+                       aspect='equal')
+        
+        cbar = ax.figure.colorbar(im, ax=ax)
+        cbar.ax.set_yticks([0, 1, 2, 3, 4])
+        cbar.ax.set_yticklabels(['$S$', '$E$', '$I_W$', '$I_S$', '$R$'])
 
 
         ax.contour(self.testing_state, [1, 2, 3, 4])
@@ -179,12 +192,6 @@ class Model():
                        right=False,
                        labelleft=False)
 
-        # if show_legend:
-            
-        #     width  = float(self.N)/20
-        #     height = float(self.N)/20
-        #     bottom = float(self.N) - height
-            
         return ax
 
 
@@ -519,8 +526,8 @@ class Model():
         gamma_I = self.kIR * self.thetaIR # Mean infectious time
         Rzero = gamma_I * (self.prob_symptom * self.etaS 
                          + (1 - self.prob_symptom) * self.etaW) \
-              + z * (self.prob_symptom * (1 - (1 - self.tauS)) ** gamma_I 
-                   + (1 - self.prob_symptom) * (1 - (1 - self.tauW)) ** gamma_I
+              + z * (self.prob_symptom * (1 - (1 - self.tauS) ** gamma_I)  
+                   + (1 - self.prob_symptom) * (1 - (1 - self.tauW) ** gamma_I) 
                     )
 
         return Rzero 
