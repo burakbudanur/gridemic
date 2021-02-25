@@ -25,6 +25,7 @@ class Model():
 
     """
 
+
     def __init__(self, seed_random = None, N = 500, kEI = 3, thetaEI = 1, 
                  kIR = 4, thetaIR = 1, prob_symptom = 0.5, tauW = 0.5, etaW = 0.5, 
                  tauS = 0.5, etaS = 0.5, num_tests = int(250e3), prob_trace = 0.5, 
@@ -141,7 +142,8 @@ class Model():
             
             infection += 1
 
-    def visualize(self, ax=None):
+
+    def visualize_population(self, ax=None, show_legend=True):
         """
         visualize the current state of the population in a graph
         """
@@ -155,7 +157,6 @@ class Model():
                                          colpal[4-k][1],
                                          colpal[4-k][2], 1.0]) 
 
-
         if ax == None:
             fig = plt.figure(figsize=(6,6))
             ax = fig.gca()
@@ -165,7 +166,10 @@ class Model():
                   vmin=0.0,
                   vmax=4.0,
                   aspect='equal')
-        
+
+
+        ax.contour(self.testing_state, [1, 2, 3, 4])
+
         ax.tick_params(axis='both',
                        which='both',
                        bottom=False,
@@ -174,6 +178,13 @@ class Model():
                        left=False,
                        right=False,
                        labelleft=False)
+
+        # if show_legend:
+            
+        #     width  = float(self.N)/20
+        #     height = float(self.N)/20
+        #     bottom = float(self.N) - height
+            
         return ax
 
 
@@ -489,6 +500,7 @@ class Model():
         
         return population
     
+
     def reproduction_number(self, z = 4.0, s = 1.0):
         """
         Computes and returns the basic reproduction number for model 
