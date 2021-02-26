@@ -345,7 +345,6 @@ class Model():
             
         for individual in symptomatics :   
 
-            neighbors = get_neighbors(symptomatic)  
             interact_neighbors(individual, self.tauS)
             interact_random(individual, self.etaS)    
 
@@ -436,7 +435,7 @@ class Model():
         self.time += 1
 
 
-    def simulate(self, NTime = 1000, num_initial_infectious = 3, verbose = 1):     
+    def simulate(self, NTime = 1000, num_initial_infectious = 3, verbose = 0):     
         """Simulate an epidemic.
 
         Parameters
@@ -508,10 +507,10 @@ class Model():
         return population
     
 
-    def reproduction_number(self, z = 4.0, s = 1.0):
+    def reproduction_number(self, z = None):
         """
         Computes and returns the basic reproduction number for model 
-        parameters. When the optional paramters are not provided, the result 
+        parameters. When the optional parameters are not provided, the result 
         is an upper-bound on R_0 assuming all neighbors of the infectious are
         susceptible and the ratio of susceptible population is 1.
 
@@ -519,15 +518,44 @@ class Model():
         ----------
         z : float
             average number of susceptible neighbors / infectious
-        s : float
-            ratio of susceptible population
         """
-
+        
         gamma_I = self.kIR * self.thetaIR # Mean infectious time
-        Rzero = gamma_I * (self.prob_symptom * self.etaS 
-                         + (1 - self.prob_symptom) * self.etaW) \
-              + z * (self.prob_symptom * (1 - (1 - self.tauS) ** gamma_I)  
-                   + (1 - self.prob_symptom) * (1 - (1 - self.tauW) ** gamma_I) 
+
+        # Contribution of the random interactions
+        term_random = gamma_I * (self.prob_symptom * self.etaS 
+                            + (1 - self.prob_symptom) * self.etaW)
+
+        # Contribution of the nearest neighbor interaction
+        term_neighbor = (self.prob_symptom * (1 - (1 - self.tauS) ** gamma_I)  
+                    + (1 - self.prob_symptom) * (1 - (1 - self.tauW) ** gamma_I)
                     )
 
-        return Rzero 
+
+        if z:
+            # mean number of nearest neighbors given
+            R_zero =  term_random + z * term_neighbor
+
+        else: 
+
+            R_fun = lambda z: term_random + z * term_neighbor
+            z_fun = lambda R, zz: 4 * term_random / R + 2.5 * zz * term_neighbor / R
+            
+            z_guess = 4
+            R_guess = R_fun(z_guess)
+
+            z_new = z_fun(R_guess, z_guess)
+            R_new = R_fun(z_new)
+
+            while abs((z_new - z_guess) / z_new 
+                    + (R_new - R_guess) / R_new) > 1e-3:
+
+                z_guess = z_new
+                R_guess = R_new
+
+                z_new = z_fun(R_guess, z_guess)
+                R_new = R_fun(z_new)
+
+            R_zero = R_new
+
+        return R_zero 
