@@ -346,7 +346,7 @@ class Model():
         for individual in symptomatics :   
 
             interact_neighbors(individual, self.tauS)
-            interact_random(individual, self.etaS)    
+            interact_random(individual, self.etaS)
 
             advance_disease(individual)
             
@@ -507,17 +507,10 @@ class Model():
         return population
     
 
-    def reproduction_number(self, z = None):
+    def reproduction_number(self):
         """
-        Computes and returns the basic reproduction number for model 
-        parameters. When the optional parameters are not provided, the result 
-        is an upper-bound on R_0 assuming all neighbors of the infectious are
-        susceptible and the ratio of susceptible population is 1.
-
-        Parameters
-        ----------
-        z : float
-            average number of susceptible neighbors / infectious
+        Computes and returns an approximation to the basic reproduction number 
+        at model parameters. 
         """
         
         gamma_I = self.kIR * self.thetaIR # Mean infectious time
@@ -532,30 +525,24 @@ class Model():
                     )
 
 
-        if z:
-            # mean number of nearest neighbors given
-            R_zero =  term_random + z * term_neighbor
+        R_fun = lambda z: term_random + z * term_neighbor
+        z_fun = lambda R, zz: 4 * term_random / R + 2.5 * zz * term_neighbor / R
+        
+        z_guess = 4
+        R_guess = R_fun(z_guess)
 
-        else: 
+        z_new = z_fun(R_guess, z_guess)
+        R_new = R_fun(z_new)
 
-            R_fun = lambda z: term_random + z * term_neighbor
-            z_fun = lambda R, zz: 4 * term_random / R + 2.5 * zz * term_neighbor / R
-            
-            z_guess = 4
-            R_guess = R_fun(z_guess)
+        while abs((z_new - z_guess) / z_new 
+                + (R_new - R_guess) / R_new) > 1e-3:
+
+            z_guess = z_new
+            R_guess = R_new
 
             z_new = z_fun(R_guess, z_guess)
             R_new = R_fun(z_new)
 
-            while abs((z_new - z_guess) / z_new 
-                    + (R_new - R_guess) / R_new) > 1e-3:
-
-                z_guess = z_new
-                R_guess = R_new
-
-                z_new = z_fun(R_guess, z_guess)
-                R_new = R_fun(z_new)
-
-            R_zero = R_new
+        R_zero = R_new
 
         return R_zero 
