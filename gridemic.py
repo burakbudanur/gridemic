@@ -23,7 +23,6 @@ class Model():
     0: Not tested, 1: Suspect: will be tested if tests available
     2: Tested, 3: Positive in contact tracing, 
     4: positive, contacts already traced
-
     """
 
 
@@ -418,6 +417,10 @@ class Model():
 
         for individual in exposed:
             
+            if self.infection_day[individual[0], individual[1]] == self.time:
+                # Skip if exposed today
+                continue
+
             advance_disease(individual)
                 
         # ------ Advance infection clock for infectious suspects ------
