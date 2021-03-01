@@ -417,10 +417,6 @@ class Model():
 
         for individual in exposed:
             
-            if self.infection_day[individual[0], individual[1]] == self.time:
-                # Skip if exposed today
-                continue
-
             advance_disease(individual)
                 
         # ------ Advance infection clock for infectious suspects ------
