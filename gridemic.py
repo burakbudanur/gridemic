@@ -98,8 +98,10 @@ class Model():
         self.disease_clock  = np.zeros((N, N)) # latent and infectious clocks
         self.test_clock     = np.zeros((N, N)) # clock testing
         self.duration       = np.zeros((N, N)) # durations in E and/or I states
+        self.tests_today    = 0
 
         self.time = 0
+        seed(self.seed_random)    
 
 
     def add_infectious(self, state=2, num_initial_infectious = 3):
@@ -114,8 +116,6 @@ class Model():
         num_initial_infectious : int
             number of people in state I_W (2) at time 0
         """
-
-        seed(self.seed_random)    
 
         infection = 0
         while infection < num_initial_infectious: 
@@ -159,15 +159,7 @@ class Model():
 
         if ax == None:
             fig = plt.figure(figsize=(6,6))
-            ax = fig.gca()
-
-
-
-        # compartments = ["$S$", "$E$", "$I_W$", "$I_S$", "$R$"]
-        # norm = mpl.colors.BoundaryNorm(np.arange(0, 5), 5)
-        # fmt = mpl.ticker.FuncFormatter(lambda x, pos: qrates[::-1][norm(x)])
-        
-            
+            ax = fig.gca()            
 
         im = ax.imshow(self.disease_state,
                        cmap=colmap,
@@ -175,9 +167,10 @@ class Model():
                        vmax=4.5,
                        aspect='equal')
         
-        cbar = ax.figure.colorbar(im, ax=ax)
-        cbar.ax.set_yticks([0, 1, 2, 3, 4])
-        cbar.ax.set_yticklabels(['$S$', '$E$', '$I_W$', '$I_S$', '$R$'])
+        if show_legend:
+            cbar = ax.figure.colorbar(im, ax=ax)
+            cbar.ax.set_yticks([0, 1, 2, 3, 4])
+            cbar.ax.set_yticklabels(['$S$', '$E$', '$I_W$', '$I_S$', '$R$'])
 
 
         ax.contour(self.testing_state, [1, 2, 3, 4])
@@ -253,7 +246,7 @@ class Model():
                 self.disease_state[random[0], random[1]] = 1 
                 self.disease_clock[random[0], random[1]] = 0 # reset clock
                 self.duration[random[0], random[1]] = (
-                    gamma(self.kEI, self.thetaEI) - 0.5 ) # Latent duration
+                    gamma(self.kEI, self.thetaEI) - 0.5) # Latent duration
                                             
                 self.new_infections[individual[0], individual[1]] += 1       
                 self.infection_day[random[0], random[1]] = self.time
@@ -277,13 +270,13 @@ class Model():
                         # Strong-symptom infectious
                         self.disease_state[individual[0], individual[1]] = 3
                     else:
-                        # Strong-symptom infectious
+                        # Weak-symptom infectious
                         self.disease_state[individual[0], individual[1]] = 2
 
                     # Reset the disease clock & assign infectious time
                     self.disease_clock[individual[0], individual[1]] = 0 
                     self.duration[individual[0], individual[1]] = (
-                        gamma(self.kIR, self.thetaIR) - 0.5) 
+                        gamma(self.kIR, self.thetaIR) - 0.5)
 
         # ------ Contact tracing and recognition of strong-symptom cases ------
         
@@ -293,9 +286,9 @@ class Model():
             # List new positive cases
             positives = np.argwhere(self.testing_state == 3)
             
-            for positive in positives:              
+            for individual in positives:              
                 
-                neighbors = get_neighbors(positive)
+                neighbors = get_neighbors(individual)
                 
                 for neighbor in neighbors:
                     if self.testing_state[neighbor[0], neighbor[1]] == 0:
@@ -306,7 +299,7 @@ class Model():
                             self.testing_state[neighbor[0], neighbor[1]] = 1                        
 
                 # Set case status to "contacts traced"
-                self.testing_state[positive[0], positive[1]]= 4
+                self.testing_state[individual[0], individual[1]]= 4
 
             # Strong-symptom cases that are have not been tested before
             symptomatics     = np.argwhere(
@@ -314,12 +307,12 @@ class Model():
                                            self.testing_state == 0)
                             )
 
-            for symptomatic in symptomatics :
+            for individual in symptomatics :
 
                 if rand() < self.prob_detect:
                     # symptom recognition success
-                    # identify the symptomatic individual as a suspect
-                    self.testing_state[symptomatic[0], symptomatic[1]] = 1 
+                    # identify the individual as a suspect
+                    self.testing_state[individual[0], individual[1]] = 1 
         
 
         # ------ Weak-symptom infectious ------
@@ -357,11 +350,11 @@ class Model():
         # Shuffle the order assuming we do not give priority testing to anyone
         shuffle(suspects)
 
-        i_test = 0 # test counter
+        self.tests_today = 0 # test counter
         for suspect in suspects:
             
             # Are there test available?
-            if i_test < self.num_tests:
+            if self.tests_today < self.num_tests:
                 
                 # Store the suspect status for later evaluation
                 self.test_results[suspect[0], suspect[1]] = \
@@ -374,12 +367,12 @@ class Model():
                 self.test_clock[suspect[0], suspect[1]] = 0
                 
                 # One test kit less available
-                i_test += 1
+                self.tests_today += 1
                 
             else:
                 # We are done for the day
                 break
-                
+ 
         # ------ Tested people: check result ------     
         
         # List of people that have been tested
@@ -449,7 +442,7 @@ class Model():
         Returns
         -------
         population : numpy.array
-            [Ntime, 6] array where rows correspond to times and columns 
+            [NTime, 6] array where rows correspond to times and columns 
             correspond to states 0: S, 1: E, 2: I_W, 3: I_S, 4: I_R, 5: cases
        
         """        
@@ -458,7 +451,8 @@ class Model():
 
         # Initialize population array
         population = np.zeros((NTime, 6))
-        
+        number_of_tests = np.zeros(NTime)
+
         # Advance the infection and testing in time
         while self.time < NTime:
                     
@@ -468,8 +462,9 @@ class Model():
             population[self.time, 3] = np.sum(self.disease_state==3) # I_s
             population[self.time, 4] = np.sum(self.disease_state==4) # I_R
             population[self.time, 5] = (np.sum(self.testing_state==3) 
-                               + np.sum(self.testing_state==4)) # cases
-            
+                                      + np.sum(self.testing_state==4)) # cases
+            number_of_tests[self.time] = self.tests_today
+
             # Display some information about the simulation
             if self.time%10 == 0 and verbose:
                 print(
@@ -503,9 +498,9 @@ class Model():
             # Take a time step
             self.evolve()
         
-        return population
+        return population, number_of_tests
     
-
+    
     def reproduction_number(self):
         """
         Computes and returns an approximation to the basic reproduction number 
