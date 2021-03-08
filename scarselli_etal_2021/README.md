@@ -10,7 +10,7 @@ produces the main results (Fig. 2--4) of Scarselli et al. (2021).
 
 The necessary data is readily provided in the folder `data/`. 
 
-If you wish to recreate this data, you would need to edit `generate_data_*` and `submit.script` according to your computing cluster's configuration. Afterwards, running the scripts `generate_*` batch produces the runs that generate simulation `data`. 
+If you wish to recreate this data, you would need to edit `generate_data_*` and `submit.script` according to your computing cluster's configuration. Afterwards, running the scripts `generate_*` batch produces the runs that generate the contents of `data/`. 
 
 See also 
 
