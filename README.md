@@ -14,7 +14,7 @@ pip install gridemic
 
 The notebooks in `examples/` demonstrates basic functionality of `gridemic`. 
 
-<video src='examples/SEIIRT5.mp4' width=600/>
+https://github.com/burakbudanur/gridemic/assets/1861787/0fad804c-ed61-4a53-9afd-556c005afbfb
 
 # publications 
 
